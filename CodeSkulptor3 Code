@@ -1,0 +1,568 @@
+import simplegui, random
+
+global welcome
+
+#images
+player_sprite_right = simplegui.load_image("https://raw.githubusercontent.com/Dry-Battery/Nuclear_Anomoly/main/player.png")
+player_sprite_left = simplegui.load_image("https://raw.githubusercontent.com/Dry-Battery/Nuclear_Anomoly/main/Player_left.png")
+player_death_sprite = simplegui.load_image("https://raw.githubusercontent.com/Dry-Battery/Nuclear_Anomoly/main/player_death.png")
+player_death_left = simplegui.load_image("https://raw.githubusercontent.com/Dry-Battery/Nuclear_Anomoly/main/Player_left_dead.png")
+platform_sprite = simplegui.load_image("https://raw.githubusercontent.com/Dry-Battery/Nuclear_Anomoly/main/Platform2.0.png")
+spike_sprite = simplegui.load_image("https://raw.githubusercontent.com/Dry-Battery/Nuclear_Anomoly/main/Spike2.0.png")
+goal_sprite = simplegui.load_image("https://raw.githubusercontent.com/Dry-Battery/Nuclear_Anomoly/main/Goal3.0.png")
+enemy_sprite_right = simplegui.load_image("https://raw.githubusercontent.com/Dry-Battery/Nuclear_Anomoly/main/Enemy_Right.png")
+enemy_sprite_left = simplegui.load_image("https://raw.githubusercontent.com/Dry-Battery/Nuclear_Anomoly/main/Enemy_left.png")
+enemy_death_right = simplegui.load_image("https://raw.githubusercontent.com/Dry-Battery/Nuclear_Anomoly/main/Enemy_right_dead.png")
+enemy_death_left = simplegui.load_image("https://raw.githubusercontent.com/Dry-Battery/Nuclear_Anomoly/main/Enemy_left_dead.png")
+FlyEnemy_sprite_right = simplegui.load_image("https://raw.githubusercontent.com/Dry-Battery/Nuclear_Anomoly/main/FlyEnemyRight.png")
+FlyEnemy_sprite_left = simplegui.load_image("https://raw.githubusercontent.com/Dry-Battery/Nuclear_Anomoly/main/FlyEnemyLeft.png")
+background1 = simplegui.load_image("https://raw.githubusercontent.com/Dry-Battery/Nuclear_Anomoly/main/Background2.0.png")
+background2 = simplegui.load_image("https://raw.githubusercontent.com/Dry-Battery/Nuclear_Anomoly/main/Background3.0.png")
+title_background = simplegui.load_image("https://raw.githubusercontent.com/Dry-Battery/Nuclear_Anomoly/main/Tittle%20Background.png")
+
+platforms = []
+enemies = []
+spikes = []
+
+game = 0
+
+class Player:
+    def __init__(self):
+        self.x = 10
+        self.y = 190
+        self.welcome = True
+        self.speed = 2
+        self.game = 0
+        self.pause = False
+        self.direction = [0,0]
+        self.falling = False
+        self.jumping = False
+        self.jumping2 = False
+        self.jump_counter = 0
+        self.win = True
+        self.deaths = 0
+        self.dead = False
+        self.jump_height = 0
+        self.images = [player_sprite_right,player_sprite_left]
+        self.death_images = [player_death_sprite,player_death_left]
+        self.death_image = player_death_sprite
+        self.image = player_sprite_right
+        self.level = 1
+        self.size = (20,20)
+
+    def Win(self):
+        if (self.x >= goal.x-(goal.size[0]/2+self.size[0]/2) and self.x <= goal.x+(goal.size[0]/2+self.size[0]/2)) and (self.y >= goal.y-(goal.size[1]/2+self.size[1]/2) and self.y <= goal.y+(goal.size[1]/2+self.size[1]/2)):
+            self.win = True
+            self.level += 1
+        if self.win == True:
+            spawn()
+            self.x = 10
+            self.y = 190
+            self.win = False
+
+    def Fall(self):
+        for Platform in platforms:
+            if (self.x >= Platform.x-(Platform.size[0]/2+self.size[0]/2) and self.x <= Platform.x+(Platform.size[0]/2+self.size[0]/2)) and (self.y >= Platform.y-(Platform.size[1]/2+self.size[1]/2) and self.y <= Platform.y+(Platform.size[1]/2+self.size[1]/2)):
+                self.falling = False
+                self.jump_counter = 0
+                self.y = Platform.y-(Platform.size[1]/2+self.size[1]/2)
+                if Platform.type == 1:
+                    self.x += Platform.direction[0]
+                elif Platform.type == 2:
+                    self.y += Platform.direction[1]
+                break
+            else:
+                if self.jumping == False and self.jumping2 == False:
+                    self.falling = True
+
+    def Death(self):
+        if self.y >= 390:
+            self.dead = True
+            self.image = self.death_image
+                  
+    def Spike_Collision(self):
+        for Spike in spikes:
+            if (self.x >= Spike.x-(Spike.size[0]/2+self.size[0]/2) and self.x <= Spike.x+(Spike.size[0]/2+self.size[0]/2)) and (self.y >= Spike.y-(Spike.size[1]/2+self.size[1]/2) and self.y <= Spike.y +(Spike.size[1]/2+self.size[1]/2)):
+                self.dead = True
+                self.image = self.death_image
+                
+    def Movement(self):
+        if self.dead == True:
+            self.direction[0] = 0
+            self.direction[1] = 0
+        
+        if self.x < 10:
+            self.direction[0] = 0
+            self.x += 1
+        
+        self.x += self.direction[0]
+        
+        if self.jumping == True and self.dead == False and self.jumping2 == False:
+            if self.jump_height <= 57:
+                self.y -= 3
+                self.jump_height += 3
+            else:
+                self.jumping = False
+                self.jump_height = 0
+        elif self.jumping2 == True and self.dead == False:
+            if self.jump_height <= 57:
+                self.y -= 3
+                self.jump_height += 3
+            else:
+                self.jumping = False
+                self.jumping2 = False
+                self.jump_height = 0
+
+        if self.falling == True and self.dead == False:
+            self.direction[1] = 3
+            self.y += self.direction[1]
+            
+    def Move_Down(self,key):
+        if self.dead == False:
+            if key == simplegui.KEY_MAP['w'] or key == simplegui.KEY_MAP['up']:
+                if (self.jumping == True or self.falling == True) and self.level > 30 and self.jumping2 == False and self.jump_counter < 1:
+                    self.jump_height = 0
+                    self.jump_counter += 1
+                    self.falling = False
+                    self.jumping2 = True
+                elif self.jumping == False and self.falling == False:
+                    self.jumping = True
+            if key == simplegui.KEY_MAP['d'] or key == simplegui.KEY_MAP['right']:
+                self.direction[0] = self.speed
+                self.image = player_sprite_right
+                self.death_image = self.death_images[0]
+            if key == simplegui.KEY_MAP['a'] or key == simplegui.KEY_MAP['left']:
+                self.direction[0] = self.speed*-1
+                self.image = player_sprite_left
+                self.death_image = self.death_images[1]
+        if key == simplegui.KEY_MAP['space'] and self.dead == True:
+            self.x = 10
+            self.y = 190
+            self.dead = False
+            self.deaths += 1
+            self.image = player_sprite_right
+            for Enemy in enemies:
+                Enemy.x = Enemy.starting_x
+                Enemy.alive = True
+                Enemy.image = Enemy.images[0]
+                Enemy.direction[0] = Enemy.speed
+        if key == simplegui.KEY_MAP['p'] and self.welcome == False:
+            if self.pause == True:
+                self.pause = False
+            elif self.pause == False:
+                self.pause = True
+            
+    def Move_Up(self,key):
+        if (key == simplegui.KEY_MAP['d'] or key == simplegui.KEY_MAP['right']) or (key == simplegui.KEY_MAP['a'] or key == simplegui.KEY_MAP['left']):
+            self.direction[0] = 0
+
+    def Draw(self,canvas):
+        canvas.draw_image(self.image, (self.image.get_width()/2, self.image.get_height()/2), (self.image.get_width(),self.image.get_height()), (self.x,self.y), self.size)
+        deaths_text = "Deaths: "+str(self.deaths)
+        canvas.draw_text(deaths_text,[0,400], 50, 'white')
+        if self.dead == True:            
+            death_text = "Press 'Space' to try again"
+            canvas.draw_text(death_text,[50, 60], 50, 'black')
+            
+class Platform:
+    def __init__(self,x,y,size1,size2):
+        self.x = x
+        self.y = y
+        self.type = 0
+        self.image = platform_sprite
+        self.size = (size1,size2)
+        
+    def Draw(self,canvas):
+        canvas.draw_image(self.image, (self.image.get_width()/2, self.image.get_height()/2), (self.image.get_width(),self.image.get_height()), (self.x,self.y), self.size)
+
+class MovingXPlatform:
+    def __init__(self,x1,x2,y,size1,size2):
+        self.x = x1
+        self.x1 = x1
+        self.x2 = x2
+        self.y = y
+        self.speed = random.randint(1,2)
+        self.direction = [0,0]
+        self.type = 1
+        self.image = platform_sprite
+        self.size = (size1,size2)
+        
+    def Move(self):
+        if self.x >= self.x2:
+            self.direction[0] = self.speed*-1
+        elif self.x <= self.x1:
+            self.direction[0] = self.speed
+            
+        self.x += self.direction[0]
+        
+    def Draw(self,canvas):
+        canvas.draw_image(self.image, (self.image.get_width()/2, self.image.get_height()/2), (self.image.get_width(),self.image.get_height()), (self.x,self.y), self.size)
+
+class MovingYPlatform:
+    def __init__(self,x,y1,y2,size1,size2):
+        self.x = x
+        self.y = y2
+        self.y1 = y1
+        self.y2 = y2
+        self.speed = random.randint(1,2)
+        self.direction = [0,0]
+        self.type = 2
+        self.image = platform_sprite
+        self.size = (size1,size2)
+        
+    def Move(self):
+        if self.y >= self.y2:
+            self.direction[1] = self.speed*-1
+        elif self.y <= self.y1:
+            self.direction[1] = self.speed
+            
+        self.y += self.direction[1]
+        
+    def Draw(self,canvas):
+        canvas.draw_image(self.image, (self.image.get_width()/2, self.image.get_height()/2), (self.image.get_width(),self.image.get_height()), (self.x,self.y), self.size)
+        
+class Spike:
+    def __init__(self,x,y):
+        self.x = x
+        self.y = y
+        self.image = spike_sprite
+        self.size = (10,10)
+        
+    def Draw(self,canvas):
+        canvas.draw_image(self.image, (self.image.get_width()/2, self.image.get_height()/2), (self.image.get_width(),self.image.get_height()), (self.x,self.y), self.size)
+
+class Enemy:
+    def __init__(self,x,y,platform):
+        self.x = x
+        self.starting_x = x
+        self.y = y
+        self.platform = platform
+        self.alive = True
+        self.speed = random.randint(1,2)
+        self.direction = [self.speed,0]
+        self.images = [enemy_sprite_right,enemy_sprite_left]
+        self.death_images = [enemy_death_right,enemy_death_left]
+        self.death_image = self.death_images[0]
+        self.image = self.images[0]
+        self.size = (20,20)
+        
+    def Move(self):
+        platform = platforms[self.platform]
+        if self.x < platform.x-(platform.size[0]/2-self.size[0]/1.5) or self.x > platform.x+(platform.size[0]/2-self.size[0]/1.5):
+            self.direction[0] *= -1
+            self.image = self.images[self.images.index(self.image)-1]
+            self.death_image = self.death_images[self.death_images.index(self.death_image)-1]
+        if platform.type == 1:
+            self.x += platform.direction[0]
+        elif platform.type == 2:
+            self.y += platform.direction[1]
+        
+        self.x += self.direction[0]
+        
+    def Death(self):
+        if player.x > self.x-(self.size[0]/2+player.size[0]/2) and self.x < player.x+(self.size[0]/2+player.size[0]/2):
+            if player.y > self.y-(self.size[1]/2+player.size[1]/2) and player.y < self.y-(self.size[1]/2):
+                self.alive = False
+                self.image = self.death_image
+            elif player.y > self.y-(self.size[1]/2+player.size[1]/2) and player.y < self.y+(self.size[1]/2+player.size[1]/2):
+                player.dead = True
+                player.image = player.death_image
+                
+    def Draw(self,canvas):
+        canvas.draw_image(self.image, (self.image.get_width()/2, self.image.get_height()/2), (self.image.get_width(),self.image.get_height()), (self.x,self.y), self.size)
+
+class FlyEnemy:
+    def __init__(self,x1,x2,y,platform):
+        self.starting_x = x2
+        self.platform = platform
+        self.x = x2
+        self.y = y
+        self.speed = random.randint(-2,-1)
+        self.direction = [self.speed,0]
+        self.images = [FlyEnemy_sprite_right,FlyEnemy_sprite_left]
+        self.image = FlyEnemy_sprite_left
+        self.x1 = x1
+        self.x2 = x2
+        self.alive = True
+        self.size = (40,10)
+        
+    def Move(self):
+        if self.x < self.x1 or self.x > self.x2:
+            self.direction[0] *= -1
+            self.image = self.images[self.images.index(self.image)-1]
+        self.x += self.direction[0]
+
+    def Death(self):
+        if player.x > self.x-(self.size[0]/2+player.size[0]/2) and player.x < self.x+(self.size[0]/2+player.size[0]/2):
+            if player.y > self.y-(self.size[1]/2+player.size[1]/2) and player.y < self.y+(self.size[1]/2+player.size[1]/2):
+                player.dead = True
+                player.image = player_death_sprite
+                
+    def Draw(self,canvas):
+        canvas.draw_image(self.image, (self.image.get_width()/2, self.image.get_height()/2), (self.image.get_width(),self.image.get_height()), (self.x,self.y), self.size)
+        
+class Goal:
+    def __init__(self):
+        self.x = 0
+        self.y = 0
+        self.image = goal_sprite
+        self.size = (20,40)
+        
+    def Draw(self,canvas):
+        canvas.draw_image(self.image, (self.image.get_width()/2, self.image.get_height()/2), (self.image.get_width(),self.image.get_height()), (self.x,self.y), self.size)
+        
+def spawn():
+    if player.win == True:
+        for i in range(len(platforms)):
+            platforms.remove(platforms[-1])
+        for i in range(len(spikes)):
+            spikes.remove(spikes[-1])
+        for i in range(len(enemies)):
+            enemies.remove(enemies[-1])
+        p = Platform(25,200,50,10)
+        platforms.append(p)
+        x = random.randint(2,4)
+        for i in range(x):
+            n = random.randint(1,10)
+            if n > 3:
+                ps1 = random.randint(40,100)
+                ps2 = random.randint(10,20)
+                if player.level < 31:
+                    if platforms[-1].type == 0:
+                        px = random.randint(round(platforms[-1].x+(platforms[-1].size[0]/2)+round(ps1/2))+30,round(platforms[-1].x+(platforms[-1].size[0]/2)+round(ps1/2)+50))
+                    elif platforms[-1].type == 1:
+                        px = platforms[-1].x2+(platforms[-1].size[0]/2)+(ps1/2)
+                    elif platforms[-1].type == 2:
+                        px = random.randint(round(platforms[-1].x+(platforms[-1].size[0]/2)+round(ps1/2))+30,round(platforms[-1].x+(platforms[-1].size[0]/2)+round(ps1/2)+50))
+                else:
+                    if platforms[-1].type == 0:
+                        px = random.randint(round(platforms[-1].x+(platforms[-1].size[0]/2)+round(ps1/2))+50,round(platforms[-1].x+(platforms[-1].size[0]/2)+round(ps1/2)+100))
+                    elif platforms[-1].type == 1:
+                        px = platforms[-1].x2+(platforms[-1].size[0]/2)+(ps1/2)
+                    elif platforms[-1].type == 2:
+                        px = random.randint(round(platforms[-1].x+(platforms[-1].size[0]/2)+round(ps1/2))+50,round(platforms[-1].x+(platforms[-1].size[0]/2)+round(ps1/2)+100))
+                if platforms[-1].type == 2:
+                    py = platforms[-1].y1+random.randint(0,20)
+                else:
+                    py = platforms[-1].y+random.randint(-10,20)
+                p = Platform(px,py,ps1,ps2)
+                if player.level != 1:
+                    if platforms[-1].type == 0:
+                        sx = random.randint(round(platforms[-1].x+(platforms[-1].size[0]/2)+10),round(px-(ps1/2)-10))
+                        sy = round(((py+platforms[-1].y)/2))
+                        s = Spike(sx,sy)
+                        spikes.append(s)
+                platforms.append(p)
+                n = random.randint(1,100)
+                if (n <= 60 or (n <= 80 and player.level > 30)) and player.level > 5 and ps1 >= 60 and player.game != 2:
+                    if i != x-1:
+                        e = Enemy(px,(py-ps2/2-10),i+1)
+                        enemies.append(e)
+            elif n == 1:
+                ps1 = random.randint(30,50)
+                ps2 = random.randint(10,20)
+                if player.level < 31:
+                    if platforms[-1].type == 0:
+                        px = platforms[-1].x+(platforms[-1].size[0]/2)+(ps1/2)
+                    elif platforms[-1].type == 1:
+                        px = platforms[-1].x2+(platforms[-1].size[0]/2)+(ps1/2)
+                    elif platforms[-1].type == 2:
+                        px = platforms[-1].x+(platforms[-1].size[0]/2)+(ps1/2)
+                    px1 = px
+                    px2 = px+random.randint(80,140)
+                else:
+                    if platforms[-1].type == 0:
+                        px = platforms[-1].x+(platforms[-1].size[0]/2)+(ps1/2)
+                    elif platforms[-1].type == 1:
+                        px = platforms[-1].x2+(platforms[-1].size[0]/2)+(ps1/2)
+                    elif platforms[-1].type == 2:
+                        px = platforms[-1].x+(platforms[-1].size[0]/2)+(ps1/2)
+                    px1 = px
+                    px2 = px+random.randint(80,140)
+                if platforms[-1].type == 2:
+                    py = platforms[-1].y1+random.randint(0,20)
+                else:
+                    py = platforms[-1].y+random.randint(-10,20)
+                p = MovingXPlatform(px1,px2,py,ps1,ps2)
+                platforms.append(p)
+                n = random.randint(1,100)
+                if (player.level > 10 and n <= 25) or (player.level > 30 and n <= 60) and player.game != 2:
+                    ex1 = px1+random.randint(-20,20)
+                    ex2 = px2+random.randint(-20,20)
+                    ey = py-(ps2/2)-30
+                    e = FlyEnemy(ex1,ex2,ey,i+1)
+                    enemies.append(e)
+            elif n == 2 or n == 3:
+                ps1 = random.randint(30,50)
+                ps2 = random.randint(10,20)
+                if player.level < 31:
+                    if platforms[-1].type == 0:
+                        px = random.randint(round(platforms[-1].x+(platforms[-1].size[0]/2)+round(ps1/2))+30,round(platforms[-1].x+(platforms[-1].size[0]/2)+round(ps1/2)+50))
+                    elif platforms[-1].type == 1:
+                        px = platforms[-1].x2+(platforms[-1].size[0]/2)+(ps1/2)
+                    elif platforms[-1].type == 2:
+                        px = random.randint(round(platforms[-1].x+(platforms[-1].size[0]/2)+round(ps1/2))+30,round(platforms[-1].x+(platforms[-1].size[0]/2)+round(ps1/2)+50))
+                else:
+                    if platforms[-1].type == 0:
+                        px = random.randint(round(platforms[-1].x+(platforms[-1].size[0]/2)+round(ps1/2))+50,round(platforms[-1].x+(platforms[-1].size[0]/2)+round(ps1/2)+100))
+                    elif platforms[-1].type == 1:
+                        px = platforms[-1].x2+(platforms[-1].size[0]/2)+(ps1/2)
+                    elif platforms[-1].type == 2:
+                        px = random.randint(round(platforms[-1].x+(platforms[-1].size[0]/2)+round(ps1/2))+50,round(platforms[-1].x+(platforms[-1].size[0]/2)+round(ps1/2)+100))
+                if platforms[-1].type == 2:    
+                    py = platforms[-1].y1+random.randint(0,20)
+                    py2 = py
+                    py1 = py-random.randint(30,50)
+                else:
+                    py = platforms[-1].y+random.randint(0,20)
+                    py2 = py
+                    py1 = py-random.randint(50,80)
+                p = MovingYPlatform(px,py1,py2,ps1,ps2)
+                platforms.append(p)
+        if platforms[-1].type != 1:
+            goal.x = platforms[-1].x+((platforms[-1].size[0]/2)+goal.size[0]/2)
+        elif platforms[-1].type == 1:
+            goal.x = platforms[-1].x2+((platforms[-1].size[0]/2)+goal.size[0]/2)
+        if platforms[-1].type == 2:
+            goal.y = platforms[-1].y1-((platforms[-1].size[1]/2)+goal.size[1]/2)
+        elif platforms[-1].type != 2:
+            goal.y = platforms[-1].y-((platforms[-1].size[1]/2)+goal.size[1]/2)
+        if goal.x > 590 or goal.y > 380 or goal.y < 20:
+            spawn()
+        
+def keydown(key):
+    player.Move_Down(key)
+    Welcome_key(key)
+    Pause_key(key)
+    
+def keyup(key):
+    player.Move_Up(key)
+    
+def background_draw(canvas):
+    if player.level <= 25:
+        image = background1
+    else:
+        image = background2
+    
+    canvas.draw_image(image, (image.get_width()/2, image.get_height()/2), (image.get_width(),image.get_height()), (300,200), (600,400))
+    if player.level == 1:
+        text = "'W' or '/\' to jump"
+        text2 = "'A' or '<' to walk left"
+        text3 = "'D' or '>' to walk right"
+        canvas.draw_text(text,[20,40],20,'black')
+        canvas.draw_text(text2,[20,60],20,'black')
+        canvas.draw_text(text3,[20,80],20,'black')
+    if player.level == 2:
+        text = "Avoid the spikes!"
+        canvas.draw_text(text,[20,70],50,'black')
+    if player.level == 6:
+        text = "Jump on the head!"
+        canvas.draw_text(text,[20,70],50,'black')
+    if player.level == 11:
+        text = "Watch out for flying ships!"
+        text2 = "They cannot be destoyed!"
+        canvas.draw_text(text,[20,40],20,'black')
+        canvas.draw_text(text2,[20,60],20,'black')
+    if player.level == 26:
+        text = "OH MY!"
+        canvas.draw_text(text,[20,70],50,'black')
+    if player.level == 31:
+        text = "You have double jump now!"
+        canvas.draw_text(text,[20,70],50,'black')
+    
+    level_text = "Level: "+str(player.level)
+    canvas.draw_text(level_text,[10, 350], 50, 'white')
+def Welcome(canvas):
+    image = title_background
+    canvas.draw_image(image, (image.get_width()/2,image.get_height()/2),(image.get_width(),image.get_height()),(300,200),(600,400))
+    title = "Nuclear Anomoly"
+    canvas.draw_text(title,[300-frame.get_canvas_textwidth(title,50)/2,70],50,'black')
+    text1 = "Press 'space' to play endless mode"
+    canvas.draw_text(text1,[300-frame.get_canvas_textwidth(text1,20)/2,115],20,'black')
+    text2 = "Press 'p' to play story(not completed)"
+    canvas.draw_text(text2,[300-frame.get_canvas_textwidth(text2,20)/2,135],20,'black')
+    text3 = "Press 's' to play speed mode"
+    canvas.draw_text(text3,[300-frame.get_canvas_textwidth(text3,20)/2,155],20,'black')
+
+def Welcome_key(key):
+    if player.welcome == True:
+        if key == simplegui.KEY_MAP['space']:
+            player.speed = 2
+            player.game = 0
+            player.welcome = False
+        #elif key == simplegui.KEY_MAP['p']:
+        #   player.speed = 2
+        #	player.game = 1
+        #	welcome = False
+        elif key == simplegui.KEY_MAP['s']:
+            player.speed = 4
+            player.game = 2
+            player.welcome = False
+
+def Pause(canvas):
+    text = "Paused"
+    canvas.draw_text(text,[20,70],50,'white')
+    text2 = "Press 'p' to resume"
+    canvas.draw_text(text2,[20,115],20,'white')
+    text3 = "Press 'e' to return to menu"
+    canvas.draw_text(text3,[20,135],20,'white')
+    
+def Pause_key(key):
+    if player.pause == True:
+        if key == simplegui.KEY_MAP['e']:
+            player.x = 10
+            player.y = 190
+            player.welcome = True
+            player.speed = 2
+            player.game = 0
+            player.pause = False
+            player.direction = [0,0]
+            player.falling = False
+            player.jumping = False
+            player.jumping2 = False
+            player.jump_counter = 0
+            player.win = True
+            player.deaths = 0
+            player.dead = False
+            player.jump_height = 0
+            player.image = player_sprite_right
+            player.level = 1
+            player.size = (20,20)
+            
+            
+player = Player()
+goal = Goal()
+ 
+def draw(canvas):
+    if player.welcome == True:
+        Welcome(canvas)
+    else:
+        if player.pause == True:
+            Pause(canvas)
+        elif player.pause == False:
+            background_draw(canvas)
+            player.Draw(canvas)
+            player.Movement()
+            player.Fall()
+            player.Death()
+            player.Spike_Collision()
+            player.Win()
+            goal.Draw(canvas)
+            for Spike in spikes:
+                Spike.Draw(canvas)
+            for Platform in platforms:
+                Platform.Draw(canvas)
+                if Platform.type != 0:
+                    Platform.Move()
+            for Enemy in enemies:
+                Enemy.Draw(canvas)
+                if Enemy.alive == True:
+                    Enemy.Move()
+                    Enemy.Death()	
+        
+frame = simplegui.create_frame("Nuclear Anomoly",600,400)   
+frame.set_canvas_background('Black')
+frame.set_draw_handler(draw)
+frame.set_keydown_handler(keydown)
+frame.set_keyup_handler(keyup)
+frame.start()
