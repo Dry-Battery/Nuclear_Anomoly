@@ -535,7 +535,28 @@ def background_draw(canvas):
         image = background2
     
     canvas.draw_image(image, (image.get_width()/2, image.get_height()/2), (image.get_width(),image.get_height()), (300,200), (600,400))
-    if player.game == 3:
+    
+    if player.game == 1:
+        if player.level == 1:
+            text = "Something is about to happen. I just know it..."
+            canvas.draw_text(text,[25,45],25,'black')
+        elif player.level == 5:
+            text = "I heard the government sent agents!?"
+            canvas.draw_text(text,[25,45],25,'black')
+        elif player.level == 7:
+            text = "I better make my way to my bunker!"
+            canvas.draw_text(text,[25,45],25,'black')
+        elif player.level == 10:
+            text = "Why is nobody out today?"
+            canvas.draw_text(text,[25,45],25,'black')
+        elif player.level == 15:
+            text = "Is it only these agents out?"
+            canvas.draw_text(text,[25,45],25,'black')
+        elif player.level == 26:
+            text = "Oh my god!"
+            canvas.draw_text(text,[25,45],25,'black')
+    
+    elif player.game == 3:
         if player.level == 1:
             text = "'W' or 'UP ARROW' to jump"
             text2 = "'A' or 'LEFT ARROW' to walk left"
@@ -564,6 +585,9 @@ def background_draw(canvas):
         if player.level == 31:
             text = "You have double jump now!"
             canvas.draw_text(text,[20,70],50,'black')
+        if player.level == 35:
+            text = "This is the end"
+            canvas.draw_text(text,[20,70],50,'black')
         if player.level == 36:
             player.welcome = True
             reset()
@@ -577,7 +601,7 @@ def Welcome(canvas):
     canvas.draw_text(title,[300-frame.get_canvas_textwidth(title,50)/2,70],50,'black')
     text1 = "Press 'space' to play endless mode"
     canvas.draw_text(text1,[300-frame.get_canvas_textwidth(text1,20)/2,115],20,'black')
-    text2 = "Press 'p' to play story(not completed)"
+    text2 = "Press 'p' to play story"
     canvas.draw_text(text2,[300-frame.get_canvas_textwidth(text2,20)/2,135],20,'black')
     text3 = "Press 's' to play speed mode"
     canvas.draw_text(text3,[300-frame.get_canvas_textwidth(text3,20)/2,155],20,'black')
@@ -592,10 +616,10 @@ def Welcome_key(key):
             player.speed = 2
             player.game = 0
             player.welcome = False
-        #elif key == simplegui.KEY_MAP['p']:
-        #   player.speed = 2
-        #	player.game = 1
-        #	welcome = False
+        elif key == simplegui.KEY_MAP['p']:
+            player.speed = 2
+            player.game = 1
+            player.welcome = False
         elif key == simplegui.KEY_MAP['s']:
             player.speed = 4
             player.game = 2
@@ -675,7 +699,7 @@ def draw(canvas):
                     Enemy.Death()	
 
 def time_handler():
-    if player.pause == False and player.game == 2:
+    if player.pause == False and player.game == 2 and player.dead == False:
         player.time += 0.017
         player.time = round(player.time*100)/100
     
